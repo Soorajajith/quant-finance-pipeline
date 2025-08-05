@@ -1,0 +1,7 @@
+vectorbt
+TA-Lib
+pandas
+numpy
+scipy
+matplotlib
+jupyterlab
