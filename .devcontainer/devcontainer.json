@@ -1,15 +1,14 @@
 {
   "name": "quant-test",
   "image": "soorajajith/quant_test_dev:latest",
-  // "build": {
-  //   "dockerfile": "Dockerfile",
-  //   "context": "."
-  // },
   "settings": {},
   "extensions": [
     "ms-python.python",
     "ms-toolsai.jupyter"
   ],
   "postCreateCommand": "pip install --no-cache-dir ta-lib -r requirements.txt",
-  "remoteUser": "root"
+  "remoteUser": "root",
+  "mounts": [
+    "source=${localEnv:HOME}/.ssh,target=/root/.ssh,type=bind"
+  ]
 }
