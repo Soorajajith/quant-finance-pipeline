@@ -6,7 +6,10 @@
   //   "context": "."
   // },
   "settings": {},
-  "extensions": ["ms-python.python"],
+  "extensions": [
+    "ms-python.python",
+    "ms-toolsai.jupyter"
+  ],
   "postCreateCommand": "pip install --no-cache-dir ta-lib -r requirements.txt",
   "remoteUser": "root"
 }

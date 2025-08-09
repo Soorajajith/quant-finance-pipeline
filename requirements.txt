@@ -6,3 +6,5 @@ scipy
 matplotlib
 jupyterlab
 yfinance
+notebook
+jupytext
