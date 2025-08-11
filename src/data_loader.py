@@ -8,7 +8,7 @@ class DataLoader:
         self.source = source
         self.tickers = tickers
 
-    def _validate_input(self, ticker: str, interval: str, start_date: str, end_date: str) ->bool:
+    def _validate_input(self, ticker: str, interval: str = None, start_date: str = None, end_date: str = None) ->bool:
         # Validate input parameters
         if not ticker or not isinstance(ticker, str):
             raise ValueError("Ticker must be a non-empty string.")
@@ -54,30 +54,54 @@ class DataLoader:
             logging.error(f"Error downloading market data for {ticker}: {e}")
             return pd.DataFrame()
     
-    def download_options_data(self, ticker: str, interval: str, start_date: str, end_date: str) -> dict:
+    def download_options_data(self, ticker: str) -> pd.DataFrame:
         # Downloads options data for a single ticker
         try:
-            self._validate_input(ticker, interval= interval, start_date=start_date, end_date=end_date)
+            self._validate_input(ticker)
             options_data = yf.Ticker(ticker).option_chain()
             if options_data.empty:
-                logging.warning(f"No options data found for {ticker} from {start_date} to {end_date}.")
+                logging.warning(f"No options data found for the {ticker}")
                 return {}
-            return {'options_data': options_data}
+            standardized_options_data = []
+            for opt_type, opt_data in [("calls", options_data.calls), ("puts", options_data.puts)]:
+                if not opt_data.empty:
+                    opt_data = opt_data[["contractSymbol", "strike", "lastPrice", "bid", "ask", "volume", "openInterest"]].dropna()
+                    opt_data = opt_data.astype({
+                        "strike": float,
+                        "lastPrice": float,
+                        "bid": float,
+                        "ask": float,
+                        "volume": float,
+                        "openInterest": float,
+                    })
+                    opt_data["Type"] = opt_type
+                    opt_data["Ticker"] = ticker
+                    standardized_options_data.append(opt_data)
+            if not standardized_options_data:
+                logging.warning(f"No options data found for {ticker}.")
+                return pd.DataFrame()
+            options_data = pd.concat(standardized_options_data).sort_index(drop=True)
+            return options_data
         except Exception as e:
             logging.error(f"Error downloading options data for {ticker}: {e}")
-            return {}
+            return pd.DataFrame()
     
-    def download_financials(self, ticker: str, interval: str, start_date: str, end_date: str) -> dict:
+    def download_financials(self, ticker: str) -> pd.DataFrame:
         # Downloads financial data for a single ticker
         try:
-            financials= yf.Ticker(ticker).financials
-            if financials.empty:
-                logging.warning(f"No financial data found for {ticker} from {start_date} to {end_date}.")
+            self._validate_input(ticker)
+            raw_data= yf.Ticker(ticker).financials
+            if raw_data.empty:
+                logging.warning(f"No financial data found for the {ticker}.")
                 return {}
-            return {'financials': financials}
+            data = raw_data.transpose()
+            data["Symbol"] = ticker
+            data = data.dropna(axis=1, how='all')  # Drop columns with all NaN values
+            data = data.reset_index()
+            return data
         except Exception as e:
             logging.error(f"Error downloading financial data for {ticker}: {e}")
-            return {}
+            return pd.DataFrame()
     
     def download_all_data(self, ticker: str, interval: str, start_date: str, end_date: str) -> dict:
         # Downloads all data for a single ticker
