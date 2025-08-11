@@ -49,7 +49,10 @@ class DataLoader:
             data = data.dropna()
             data = data.astype(float)
             data["Symbol"] = ticker
-            return data.reset_index()
+            data = data.reset_index()
+            if data.isnull().values.any():
+               data = data.dropna()
+            return data
         except Exception as e:
             logging.error(f"Error downloading market data for {ticker}: {e}")
             return pd.DataFrame()
@@ -81,6 +84,8 @@ class DataLoader:
                 logging.warning(f"No options data found for {ticker}.")
                 return pd.DataFrame()
             options_data = pd.concat(standardized_options_data).sort_index(drop=True)
+            if options_data.isnull().values.any():
+                options_data = options_data.dropna()
             return options_data
         except Exception as e:
             logging.error(f"Error downloading options data for {ticker}: {e}")
