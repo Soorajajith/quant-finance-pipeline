@@ -93,7 +93,7 @@ class DataLoader:
             raw_data= yf.Ticker(ticker).financials
             if raw_data.empty:
                 logging.warning(f"No financial data found for the {ticker}.")
-                return {}
+                return pd.DataFrame()
             data = raw_data.transpose()
             data["Symbol"] = ticker
             data = data.dropna(axis=1, how='all')  # Drop columns with all NaN values
