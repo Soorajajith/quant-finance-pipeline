@@ -4,10 +4,10 @@ from datetime import datetime
 import logging 
 
 class DataLoader:
-    def __init__(self, source: str, tickers: list):
-        self.source = source
-        self.tickers = tickers
-
+    def __init__(self):
+        self.source = 'yfinance'
+        self.tickers = []
+    
     def _validate_input(self, ticker: str, interval: str = None, start_date: str = None, end_date: str = None) ->bool:
         # Validate input parameters
         if not ticker or not isinstance(ticker, str):
