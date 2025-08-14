@@ -6,13 +6,18 @@ import logging
 class DataLoader:
     def __init__(self):
         self.source = 'yfinance'
-        self.tickers = []
+        self.tickers = self._get_top_tickers()  # Get top tickers from a predefined list
     
-    def _validate_input(self, ticker: str, interval: str = None, start_date: str = None, end_date: str = None) ->bool:
+    def _get_top_tickers(self) -> list:
+        # Hardcode top 10 tickers (US large-cap companies)
+        ticker_data = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "TSLA", "BRK-B", "META", "V", "JPM"]
+        return ticker_data
+    
+    def _validate_input(self, ticker: str, interval: str = "1d", start_date: str = "1995-05-02", end_date: str = "1995-09-13") ->bool:
         # Validate input parameters
         if not ticker or not isinstance(ticker, str):
             raise ValueError("Ticker must be a non-empty string.")
-        valid_intervals = ['1d','5d','1mo','3mo','6mo','1y','2y','5y','10y','ytd','max']
+        valid_intervals = ["1d","5d","1mo","3mo","6mo","1y","2y","5y","10y","ytd","max"]
         if interval not in valid_intervals:
             raise ValueError(f"Interval must be one of {valid_intervals}")
         try:
@@ -28,11 +33,11 @@ class DataLoader:
         # Downloads data for all tickers, returns dict of DataFrames
         try:
             self._validate_input(ticker, interval, start_date, end_date)
-            history_data = yf.download(ticker, interval=interval, start=start_date, end=end_date)
+            history_data = yf.Ticker(ticker).history(start=start_date, end=end_date, interval=interval)
             if history_data.empty:
                 logging.warning(f"No historical data found for {ticker} from {start_date} to {end_date}.")
-                return {}
-            return pd.DataFrame()
+                return pd.DataFrame()
+            return history_data
         except Exception as e:
             logging.error(f"Error downloading historical data for {ticker}: {e}")
             return {}
@@ -41,10 +46,10 @@ class DataLoader:
         # Download market data
         try:
             self._validate_input(ticker, interval, start_date, end_date)
-            raw_data = yf.Ticker(ticker).history(start=start_date, end=start_date, interval=interval)
+            raw_data = yf.Ticker(ticker).history(start=start_date, end=end_date, interval=interval)
             if raw_data.empty :
                 logging.warning(f"No data found for {ticker} from {start_date} to {end_date}.")
-                return {}
+                return pd.DataFrame()
             data = raw_data[["Open", "High", "Low", "Close", "Volume"]]
             data = data.dropna()
             data = data.astype(float)
@@ -62,9 +67,10 @@ class DataLoader:
         try:
             self._validate_input(ticker)
             options_data = yf.Ticker(ticker).option_chain()
-            if options_data.empty:
-                logging.warning(f"No options data found for the {ticker}")
-                return {}
+            print("Options data downloaded successfully.", options_data)
+            # if options_data.empty:
+            #     logging.warning(f"No options data found for the {ticker}")
+            #     return {}
             standardized_options_data = []
             for opt_type, opt_data in [("calls", options_data.calls), ("puts", options_data.puts)]:
                 if not opt_data.empty:
