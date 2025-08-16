@@ -67,10 +67,9 @@ class DataLoader:
         try:
             self._validate_input(ticker)
             options_data = yf.Ticker(ticker).option_chain()
-            print("Options data downloaded successfully.", options_data)
-            # if options_data.empty:
-            #     logging.warning(f"No options data found for the {ticker}")
-            #     return {}
+            if options_data is None:
+                logging.warning(f"No options data found for {ticker}.")
+                return pd.DataFrame()
             standardized_options_data = []
             for opt_type, opt_data in [("calls", options_data.calls), ("puts", options_data.puts)]:
                 if not opt_data.empty:
@@ -89,7 +88,7 @@ class DataLoader:
             if not standardized_options_data:
                 logging.warning(f"No options data found for {ticker}.")
                 return pd.DataFrame()
-            options_data = pd.concat(standardized_options_data).sort_index(drop=True)
+            options_data = pd.concat(standardized_options_data).reset_index(drop=True)
             if options_data.isnull().values.any():
                 options_data = options_data.dropna()
             return options_data
