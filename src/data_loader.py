@@ -1,7 +1,14 @@
 import pandas as pd
 import yfinance as yf
 from datetime import datetime
-import logging 
+import logging
+from dataclasses import dataclass
+
+@dataclass
+class TickerData:
+    market_data: pd.DataFrame
+    options_data: pd.DataFrame
+    financials: pd.DataFrame
 
 class DataLoader:
     def __init__(self):
@@ -113,20 +120,22 @@ class DataLoader:
             logging.error(f"Error downloading financial data for {ticker}: {e}")
             return pd.DataFrame()
     
-    def download_all_data(self, ticker: str, interval: str, start_date: str, end_date: str) -> dict:
+    def download_all_data(self, ticker: str, interval: str, start_date: str, end_date: str) -> TickerData:
         # Downloads all data for a single ticker
         try:
             self._validate_input(ticker, interval, start_date, end_date)
-            history_data = self.download_history_data(ticker, interval, start_date, end_date)
             market_data = self.market_data(ticker, interval, start_date, end_date)
-            options_data = self.download_options_data(ticker, interval, start_date, end_date)
-            financials = self.download_financials(ticker, interval, start_date, end_date)
-            return {
-                'history_data': history_data.get('history_data'),
-                'market_data': market_data.get('market_data'),
-                'options_data': options_data.get('options_data'),
-                'financials': financials.get('financials')
-            }
+            options_data = self.download_options_data(ticker)
+            financials = self.download_financials(ticker)
+            return TickerData(
+                market_data=market_data,
+                options_data=options_data,
+                financials=financials
+            )
         except Exception as e:
             logging.error(f"Error downloading all data for {ticker}: {e}")
-            return {}
+            return TickerData(
+                market_data=pd.DataFrame(),
+                options_data=pd.DataFrame(),
+                financials=pd.DataFrame()
+            )
