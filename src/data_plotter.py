@@ -23,7 +23,7 @@ class PlotterClass:
             closing_fig.update_layout(
                 title='Closing Price Over Time',
                 xaxis_title='Date',
-                yaxis_title='Price',
+                yaxis_title='Price (USD)',
                 template=PlotterClass.template
             )
             return closing_fig
@@ -67,10 +67,10 @@ class PlotterClass:
             ), row=2, col=1)
             candlestick_fig.update_layout(
                 title = {
-                    'text': f' {market_data["Symbol"]} Candlestick Chart with volume',
+                    'text': f' {market_data["Symbol"][0]} Candlestick Chart with volume',
                     'x' : 0.5,
                     'y': 0.9,
-                    'font': {'size' : 24},
+                    'font': {'size' : 15},
                     'xanchor': 'center',
                     'yanchor': 'top',},
                     xaxis_rangeslider_visible=False,
@@ -86,39 +86,41 @@ class PlotterClass:
             return candlestick_fig
         
         @staticmethod
-        def plot_rolling_volatility(market_data: pd.DataFrame, window:int = 30):
+        def plot_rolling_volatility(market_data: pd.DataFrame):
             "Plot rolling volatility from the market data"
             if market_data.empty:
                 logging.warning("Market data is empty. Cannot plot rolling volatility.")
                 return
-            local_market_data = market_data.copy()
             volatility_fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.02, row_heights=[0.7, 0.3])
             volatility_fig.add_trace(go.Scatter(
-                x=local_market_data["Date"],
-                y=local_market_data["volatility"],
+                x=market_data["Date"],
+                y=market_data["volatility"],
                 mode='lines',
                 name='Rolling Volatility'
             ), row=1, col=1)
             volatility_fig.add_trace(go.Scatter(
-                x=local_market_data["Date"],
-                y=local_market_data["volatility_log"],
+                x=market_data["Date"],
+                y=market_data["volatility_log"],
                 mode='lines',
                 name='Log Returns Volatility'
             ), row=1, col=1)
             volatility_fig.add_trace(go.Scatter(
-                x=local_market_data["Date"],
-                y=local_market_data["returns"],
+                x=market_data["Date"],
+                y=market_data["returns"],
                 mode='lines',
                 name='Returns'
             ), row=2, col=1)
             volatility_fig.add_trace(go.Scatter(
-                x=local_market_data["Date"],
-                y=local_market_data["log_returns"],
+                x=market_data["Date"],
+                y=market_data["log_returns"],
                 mode='lines',
                 name='Log Returns'
             ), row=2, col=1)
             volatility_fig.update_layout(
-                title="Returns and Rolling Volatility Over Time",
+                title="Returns and Rolling volatility Over Time",
+                xaxis2_title='Date',
+                yaxis_title='Volatility',
+                yaxis2_title='Returns',
                 template=PlotterClass.template
             )
             return volatility_fig

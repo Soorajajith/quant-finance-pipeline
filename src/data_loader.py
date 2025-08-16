@@ -62,6 +62,7 @@ class DataLoader:
             data = data.astype(float)
             data = data.dropna()
             data["Symbol"] = ticker
+            data["Date"] = raw_data.index  # keep the datetime index as a column
             data = data.reset_index(drop=True)
             if data.isnull().values.any():
                data = data.dropna()
