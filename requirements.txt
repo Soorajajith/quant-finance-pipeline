@@ -9,3 +9,4 @@ yfinance
 notebook
 jupytext
 pytest
+seaborn
