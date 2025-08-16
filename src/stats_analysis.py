@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import logging
+from scipy.stats import gaussian_kde
+
 class StatsAnalysis:
     "Class for statistical analysis of financial data"
 
@@ -25,4 +27,43 @@ class StatsAnalysis:
         stats_data[numeric_cols] = stats_data[numeric_cols].astype(float)
 
         return stats_data.dropna()
+    
+    @staticmethod
+    def calculate_descriptive_stats(data: pd.DataFrame) -> pd.DataFrame:
+        if data.empty:
+            logging.warning("Market data is empty. Cannot calculate descriptive statistics.")
+            return pd.DataFrame(index=data.index)
+        # Calculate descriptive statistics
+        descriptive_data = pd.DataFrame({
+        "returns_mean": [data["returns"].mean()],
+        "returns_std": [data["returns"].std()],
+        "returns_median": [data["returns"].median()],
+        "skewness": [data["returns"].skew()],
+        "kurtosis": [data["returns"].kurtosis()],
+        "returns_min": [data["returns"].min()],
+        "returns_max": [data["returns"].max()],
+        ## Quantiles 5% and 95% for better understanding of distribution
+        "returns_5pct": [data["returns"].quantile(0.05)],
+        "returns_95pct": [data["returns"].quantile(0.95)]
+        })
+        return descriptive_data
+    
+    @staticmethod
+    def estimate_return_distribution(data: pd.DataFrame, num_points: int = 500) -> pd.DataFrame:
+        if data.empty:
+            logging.warning("Market data is empty. Cannot estimate return distribution.")
+            return pd.DataFrame("x","kde")
+
+        returns = data["returns"].dropna()
+        kde = gaussian_kde(returns)
+        ## x_range is using min() and max() of the observed returns. Sometimes, for smoother visual tails, 
+        ## extending the range slightly (e.g., min()-3*std to max()+3*std) is better.
+        x_min = returns.min() - 3 * returns.std()
+        x_max = returns.max() + 3 * returns.std()
+        x_range = np.linspace(x_min, x_max, num_points)
+        kde_values = kde(x_range)
+        return pd.DataFrame({
+            "x" : x_range,
+            "kde": kde_values
+        })
     

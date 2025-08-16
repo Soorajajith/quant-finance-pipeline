@@ -145,6 +145,64 @@ class PlotterClass:
                 template=PlotterClass.template
             )
             return high_low_fig
+        
+        @staticmethod
+        def plot_return_distribution(market_data: pd.DataFrame, descriptive_data: pd.DataFrame, gaussian_kde: pd.DataFrame):
+            """Plot return distribution with histogram and Gaussian KDE"""
+            if market_data.empty:
+                logging.warning("Market data is empty. Cannot plot return distribution.")
+                return
+
+            histogram_plot = go.Figure()
+
+            # Histogram
+            histogram_plot.add_trace(go.Histogram(
+                x=market_data["returns"],
+                histnorm="probability density",
+                name="Return Histogram",
+                opacity=0.6
+            ))
+
+            # KDE line
+            histogram_plot.add_trace(go.Scatter(
+                x=gaussian_kde["x"],
+                y=gaussian_kde["kde"],
+                mode="lines",
+                name="KDE",
+                line=dict(color="red", width=2)
+            ))
+
+            # Mean and Median lines
+            histogram_plot.add_vline(
+                x=descriptive_data["returns_mean"].iloc[0],
+                line_dash="dash", line_color="green",
+                annotation_text="Mean", annotation_position="top right"
+            )
+            histogram_plot.add_vline(
+                x=descriptive_data["returns_median"].iloc[0],
+                line_dash="dot", line_color="blue",
+                annotation_text="Median", annotation_position="top left"
+            )
+
+            # Skewness & Kurtosis annotation
+            skew = descriptive_data["skewness"].iloc[0]
+            kurt = descriptive_data["kurtosis"].iloc[0]
+            histogram_plot.add_annotation(
+                x=0.98, y=0.95, xref="paper", yref="paper", showarrow=False,
+                text=f"Skewness: {skew:.2f}<br>Kurtosis: {kurt:.2f}",
+                align="right", bgcolor="black", bordercolor="black", opacity=0.8
+            )
+
+            histogram_plot.update_layout(
+                title="Returns Distribution with KDE",
+                xaxis_title="Returns",
+                yaxis_title="Density",
+                template=PlotterClass.template
+            )
+
+            return histogram_plot
+
+            
             
 
 
