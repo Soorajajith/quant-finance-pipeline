@@ -92,32 +92,28 @@ class PlotterClass:
                 logging.warning("Market data is empty. Cannot plot rolling volatility.")
                 return
             local_market_data = market_data.copy()
-            local_market_data["returns"] = local_market_data["Close"].pct_change()
-            local_market_data["volatility"] = local_market_data["returns"].rolling(window=window).std()
-            local_market_data["log_returns"] = np.log(local_market_data["Close"] / local_market_data["Close"].shift(1))
-            local_market_data["volatility_log"] = local_market_data["log_returns"].rolling(window=window).sstd()
             volatility_fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.02, row_heights=[0.7, 0.3])
             volatility_fig.add_trace(go.Scatter(
                 x=local_market_data["Date"],
-                y=local_market_data["Volatility"],
+                y=local_market_data["volatility"],
                 mode='lines',
                 name='Rolling Volatility'
             ), row=1, col=1)
             volatility_fig.add_trace(go.Scatter(
                 x=local_market_data["Date"],
-                y=local_market_data["Volatility_log"],
+                y=local_market_data["volatility_log"],
                 mode='lines',
                 name='Log Returns Volatility'
             ), row=1, col=1)
             volatility_fig.add_trace(go.Scatter(
                 x=local_market_data["Date"],
-                y=local_market_data["Returns"],
+                y=local_market_data["returns"],
                 mode='lines',
                 name='Returns'
             ), row=2, col=1)
             volatility_fig.add_trace(go.Scatter(
                 x=local_market_data["Date"],
-                y=local_market_data["Log_returns"],
+                y=local_market_data["log_returns"],
                 mode='lines',
                 name='Log Returns'
             ), row=2, col=1)

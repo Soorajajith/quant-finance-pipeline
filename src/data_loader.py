@@ -3,6 +3,7 @@ import yfinance as yf
 from datetime import datetime
 import logging
 from dataclasses import dataclass
+import numpy as np
 
 @dataclass
 class TickerData:
@@ -49,7 +50,7 @@ class DataLoader:
             logging.error(f"Error downloading historical data for {ticker}: {e}")
             return {}
     
-    def market_data(self, ticker: str, interval: str, start_date: str, end_date: str) -> pd.DataFrame:
+    def market_data(self, ticker: str, interval: str, start_date: str, end_date: str, rolling_window: int) -> pd.DataFrame:
         # Download market data
         try:
             self._validate_input(ticker, interval, start_date, end_date)
@@ -58,10 +59,14 @@ class DataLoader:
                 logging.warning(f"No data found for {ticker} from {start_date} to {end_date}.")
                 return pd.DataFrame()
             data = raw_data[["Open", "High", "Low", "Close", "Volume"]]
-            data = data.dropna()
-            data = data.astype(float)
+            data["returns"] = data["Close"].pct_change()
+            data["volatility"] = data["returns"].rolling(window=rolling_window).std()
+            data["log_returns"] = np.log(data["Close"] / data["Close"].shift(1))
+            data["volatility_log"] = data["log_returns"].rolling(window=rolling_window).std()
+            numerical_columns = ["Open", "High", "Low", "Close", "Volume", "returns", "volatility", "log_returns", "volatility_log"]
+            data[numerical_columns] = data[numerical_columns].astype(float)
             data["Symbol"] = ticker
-            data = data.reset_index()
+            data = data.reset_index(drop=True)
             if data.isnull().values.any():
                data = data.dropna()
             return data
