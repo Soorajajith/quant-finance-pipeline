@@ -11,21 +11,17 @@ class StatsAnalysis:
         if data.empty:
             logging.warning("Market data is empty. Cannot calculate returns and volatility.")
             return pd.DataFrame()
-
         # Make a copy to keep the original data intact
         stats_data = data.copy()
-
         # Calculate returns and volatility
         stats_data["returns"] = stats_data["Close"].pct_change()
         stats_data["log_returns"] = np.log(stats_data["Close"] / stats_data["Close"].shift(1))
         stats_data["volatility"] = stats_data["returns"].rolling(window=rolling_window).std()
         stats_data["volatility_log"] = stats_data["log_returns"].rolling(window=rolling_window).std()
-
         # Convert only numeric columns to float
         numeric_cols = ["Close", "Open", "High", "Low", "Volume", 
                         "returns", "log_returns", "volatility", "volatility_log"]
         stats_data[numeric_cols] = stats_data[numeric_cols].astype(float)
-
         return stats_data.dropna()
     
     @staticmethod
@@ -67,3 +63,24 @@ class StatsAnalysis:
             "kde": kde_values
         })
     
+    @staticmethod
+    def calculate_rolling_volume_average(data: pd.DataFrame, size1: int = 20, size2: int = 50) -> pd.DataFrame:
+        if data.empty:
+            logging.Warning("Market data is empty. Cannot calculate rolling volume average")
+            return pd.DataFrame("rolling_volume_20","rolling_volume_50")
+        volume_data = pd.DataFrame(index=data.index)
+        volume_data["rolling_volume_20"] = data["Volume"].rolling(size1).mean()
+        volume_data["rolling_volume_50"] = data["Volume"].rolling(size2).mean()
+        return volume_data
+    
+    @staticmethod
+    def calculate_vwap(data: pd.DataFrame) -> pd.DataFrame:
+        if data.empty:
+            logging.Warning("Market data is empty. Cannot calculate volume weighted average price")
+            return pd.DataFrame("typical_price","cum_vol","cum_vol_price","vwap")
+        vwap_data = pd.DataFrame(index=data.index)
+        vwap_data["typical_price"] = (data["High"] + data["Low"] + data["Close"])/3
+        vwap_data["cum_vol"] = data["Volume"].cumsum()
+        vwap_data["cum_vol_price"] = (vwap_data["typical_price"] * data["Volume"]).cumsum()
+        vwap_data["vwap"] = vwap_data["cum_vol_price"] / vwap_data["cum_vol"]
+        return vwap_data
