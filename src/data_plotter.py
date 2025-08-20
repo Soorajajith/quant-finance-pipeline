@@ -149,12 +149,10 @@ class PlotterClass:
         @staticmethod
         def plot_return_distribution(market_data: pd.DataFrame, descriptive_data: pd.DataFrame, gaussian_kde: pd.DataFrame):
             """Plot return distribution with histogram and Gaussian KDE"""
-            if market_data.empty:
+            if market_data.empty or descriptive_data.empty:
                 logging.warning("Market data is empty. Cannot plot return distribution.")
                 return
-
             histogram_plot = go.Figure()
-
             # Histogram
             histogram_plot.add_trace(go.Histogram(
                 x=market_data["returns"],
@@ -162,7 +160,6 @@ class PlotterClass:
                 name="Return Histogram",
                 opacity=0.6
             ))
-
             # KDE line
             histogram_plot.add_trace(go.Scatter(
                 x=gaussian_kde["x"],
@@ -171,7 +168,6 @@ class PlotterClass:
                 name="KDE",
                 line=dict(color="red", width=2)
             ))
-
             # Mean and Median lines
             histogram_plot.add_vline(
                 x=descriptive_data["returns_mean"].iloc[0],
@@ -183,7 +179,6 @@ class PlotterClass:
                 line_dash="dot", line_color="blue",
                 annotation_text="Median", annotation_position="top left"
             )
-
             # Skewness & Kurtosis annotation
             skew = descriptive_data["skewness"].iloc[0]
             kurt = descriptive_data["kurtosis"].iloc[0]
@@ -199,8 +194,69 @@ class PlotterClass:
                 yaxis_title="Density",
                 template=PlotterClass.template
             )
-
             return histogram_plot
+        @staticmethod
+        def plot_rolling_volume_average(data: pd.DataFrame, volume_data: pd.DataFrame):
+            if data.empty or volume_data.empty:
+                logging.warning("Market data or Volume data empty. Cannot plot volume distribution")
+            volume_fig = go.Figure()
+            volume_fig.add_trace(go.Scatter(
+                x=data.index,
+                y=data["Close"],
+                mode='lines',
+                name='Close Price',
+                line=dict(color="blue")
+            ))
+            volume_fig.add_trace(go.Scatter(
+                x=volume_data.index,
+                y=volume_data["vwap"],
+                mode='lines',
+                name='VWAP',
+                line=dict(color="orange", dash="dot")
+            ))
+            volume_fig.update_layout(
+                title="Price vs VWAP",
+                xaxis_title="Date",
+                yaxis_title="Price",
+                tempate=PlotterClass.template
+            )
+            return volume_fig
+        @staticmethod
+        def plot_volume_rolling(data: pd.DataFrame, rolling_volume_data: pd.DataFrame):
+            if data.empty or rolling_volume_data.empty:
+                logging.warning("Market data or Volume data empty. Cannot plot volume distribution")
+            rolling_volume_fig = go.Figure()
+            rolling_volume_fig.add_trace(go.Bar(
+                x=data.index,
+                y=data["Volumes"],
+                name="Daily Volume",
+                marker=dict(color="lightblue")
+            ))
+            rolling_volume_fig.add_trace(go.Scatter(
+                x=rolling_volume_data.index,
+                y=rolling_volume_data["rolling_volume_20"],
+                mode="lines",
+                name="20-day Rolling Volume",
+                line=dict(color="red")
+            ))
+            rolling_volume_fig.add_trace(go.Scatter(
+                x=rolling_volume_data.index,
+                y=rolling_volume_data["rolling_volume_50"],
+                mode="lines",
+                name="50-day Rolling Volume",
+                line=dict(color="green")
+            ))
+            rolling_volume_fig.update_layout(
+                title="Volume with Rolling Averages",
+                xaxis_title="Date",
+                yaxis_title="Volume",
+                template=PlotterClass.template,
+                barmode="overlay"
+            )
+            return rolling_volume_fig
+
+
+            
 
             
             
