@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from plotly.subplots import make_subplots
 import logging
+import plotly.figure_factory as ff
 
 class PlotterClass:
     "Class for plotting financial data"
@@ -218,7 +219,7 @@ class PlotterClass:
                 title="Price vs VWAP",
                 xaxis_title="Date",
                 yaxis_title="Price",
-                tempate=PlotterClass.template
+                template=PlotterClass.template
             )
             return volume_fig
         @staticmethod
@@ -255,6 +256,69 @@ class PlotterClass:
             )
             return rolling_volume_fig
 
+        @staticmethod
+        def plot_price_with_sma(market_data: pd.DataFrame):
+            """Plot price with rolling averages (20d, 50d, 200d)."""
+            if market_data.empty:
+                logging.warning("Market data is empty. Cannot plot SMA.")
+                return
+
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=market_data["Date"], y=market_data["Close"],
+                                    mode="lines", name="Close"))
+            for w in [20, 50, 200]:
+                if f"SMA_{w}" in market_data.columns:
+                    fig.add_trace(go.Scatter(
+                        x=market_data["Date"], y=market_data[f"SMA_{w}"],
+                        mode="lines", name=f"SMA {w}"
+                    ))
+            fig.update_layout(title="Price with Rolling Averages",
+                            xaxis_title="Date", yaxis_title="Price",
+                            template=PlotterClass.template)
+            return fig
+
+        @staticmethod
+        def plot_price_vs_volume_dual(market_data: pd.DataFrame):
+            """Dual-axis chart: Price vs Volume (overlayed)."""
+            if market_data.empty:
+                logging.warning("Market data is empty. Cannot plot price vs volume.")
+                return
+
+            fig = make_subplots(specs=[[{"secondary_y": True}]])
+            fig.add_trace(go.Scatter(
+                x=market_data["Date"], y=market_data["Close"],
+                name="Close Price", line=dict(color="blue")
+            ), secondary_y=False)
+            fig.add_trace(go.Bar(
+                x=market_data["Date"], y=market_data["Volume"],
+                name="Volume", opacity=0.3
+            ), secondary_y=True)
+
+            fig.update_layout(title="Price vs Volume (Dual Axis)",
+                            template=PlotterClass.template)
+            fig.update_yaxes(title_text="Price (USD)", secondary_y=False)
+            fig.update_yaxes(title_text="Volume", secondary_y=True)
+            return fig
+        @staticmethod
+        def plot_correlation_heatmap(corr_matrix: pd.DataFrame, title="Correlation Heatmap"):
+            "Plot heatmap of correlation"
+            if corr_matrix.empty:
+                logging.warning("Correlation matrix is empty. Cannot plot the correlation")
+            fig = ff.create_annotated_heatmap(
+                z=corr_matrix.values,
+                x=list(corr_matrix.columns),
+                y=list(corr_matrix.index),
+                annotation_text=corr_matrix.round(2).values,
+                colorscale="Viridis",
+                showscale=True,
+                hoverinfo="z"
+            )
+            fig.update_layout(
+                title=title,
+                xaxis=dict(tickangle=45),
+                yaxis=dict(autorange="reversed")
+            )
+            return fig
 
             
 

@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import logging
 from scipy.stats import gaussian_kde
+from typing import Tuple
 
 class StatsAnalysis:
     "Class for statistical analysis of financial data"
@@ -84,3 +85,30 @@ class StatsAnalysis:
         vwap_data["cum_vol_price"] = (vwap_data["typical_price"] * data["Volume"]).cumsum()
         vwap_data["vwap"] = vwap_data["cum_vol_price"] / vwap_data["cum_vol"]
         return vwap_data
+    
+    @staticmethod
+    def calculate_rolling_close_averages(data: pd.DataFrame, windows=[20,50,200]) -> pd.DataFrame:
+        "Calculate rolling averages for closing prices"
+        if data.empty:
+            logging.warning("Market data is empty. Cannot compute rolling averages for closing prices")
+            return pd.DataFrame()
+        rolling_average = pd.DataFrame(index=data.index)
+        for w in windows:
+            rolling_average[f"SMA_{w}"] = data["Close"].rolling(window=w).mean()
+        return rolling_average
+    
+    @staticmethod
+    def calculate_correlations(data: pd.DataFrame, return_data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Compute correlation matrices:
+        - OHLCV features
+        - Return features
+        """
+        if data.empty or return_data.empty:
+            logging.warning("Either market data or return data is empty")
+            return pd.DataFrame(), pd.DataFrame()
+        features = ["Open", "High", "Low", "Close", "Volume"]
+        available = [c for c in features if c in data.columns]
+        correlation_ohlcv = data[available].corr()
+        correlation_returns = return_data.corr()
+        return correlation_ohlcv, correlation_returns
