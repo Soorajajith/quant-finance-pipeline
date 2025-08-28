@@ -12,7 +12,7 @@ class PlotterClass:
     
     class MarketData:
         @staticmethod
-        def plot_closing_data(market_data: pd.DataFrame):
+        def plot_closing_data(market_data: pd.DataFrame) -> go.Figure:
             "Plot closing data from the market data "
             closing_fig = go.Figure()
             closing_fig.add_trace(go.Scatter(
@@ -30,7 +30,7 @@ class PlotterClass:
             return closing_fig
         
         @staticmethod
-        def plot_candlestick_data(market_data: pd.DataFrame, sma1: int = 0, sma2: int = 0):
+        def plot_candlestick_data(market_data: pd.DataFrame, sma1: int = 0, sma2: int = 0) -> go.Figure:
             "Plot candlestick data from the market data"
             if market_data.empty:
                 logging.warning("Market data is empty. Cannot plot candlestick chart.")
@@ -87,7 +87,7 @@ class PlotterClass:
             return candlestick_fig
         
         @staticmethod
-        def plot_rolling_volatility(market_data: pd.DataFrame):
+        def plot_rolling_volatility(market_data: pd.DataFrame) -> go.Figure:
             "Plot rolling volatility from the market data"
             if market_data.empty:
                 logging.warning("Market data is empty. Cannot plot rolling volatility.")
@@ -127,7 +127,7 @@ class PlotterClass:
             return volatility_fig
             
         @staticmethod
-        def plot_high_low_range(market_data: pd.DataFrame):
+        def plot_high_low_range(market_data: pd.DataFrame) -> go.Figure:
             if market_data.empty:
                 logging.warning("Market data is empty. Cannot plot high-low range.")
                 return
@@ -148,7 +148,7 @@ class PlotterClass:
             return high_low_fig
         
         @staticmethod
-        def plot_return_distribution(market_data: pd.DataFrame, descriptive_data: pd.DataFrame, gaussian_kde: pd.DataFrame):
+        def plot_return_distribution(market_data: pd.DataFrame, descriptive_data: pd.DataFrame, gaussian_kde: pd.DataFrame) -> go.Figure:
             """Plot return distribution with histogram and Gaussian KDE"""
             if market_data.empty or descriptive_data.empty:
                 logging.warning("Market data is empty. Cannot plot return distribution.")
@@ -197,7 +197,7 @@ class PlotterClass:
             )
             return histogram_plot
         @staticmethod
-        def plot_rolling_volume_average(data: pd.DataFrame, volume_data: pd.DataFrame):
+        def plot_rolling_volume_average(data: pd.DataFrame, volume_data: pd.DataFrame) -> go.Figure:
             if data.empty or volume_data.empty:
                 logging.warning("Market data or Volume data empty. Cannot plot volume distribution")
             volume_fig = go.Figure()
@@ -223,7 +223,7 @@ class PlotterClass:
             )
             return volume_fig
         @staticmethod
-        def plot_volume_rolling(data: pd.DataFrame, rolling_volume_data: pd.DataFrame):
+        def plot_volume_rolling(data: pd.DataFrame, rolling_volume_data: pd.DataFrame) -> go.Figure:
             if data.empty or rolling_volume_data.empty:
                 logging.warning("Market data or Volume data empty. Cannot plot volume distribution")
             rolling_volume_fig = go.Figure()
@@ -257,7 +257,7 @@ class PlotterClass:
             return rolling_volume_fig
 
         @staticmethod
-        def plot_price_with_sma(market_data: pd.DataFrame):
+        def plot_price_with_sma(market_data: pd.DataFrame) -> go.Figure:
             """Plot price with rolling averages (20d, 50d, 200d)."""
             if market_data.empty:
                 logging.warning("Market data is empty. Cannot plot SMA.")
@@ -278,7 +278,7 @@ class PlotterClass:
             return fig
 
         @staticmethod
-        def plot_price_vs_volume_dual(market_data: pd.DataFrame):
+        def plot_price_vs_volume_dual(market_data: pd.DataFrame) -> go.Figure:
             """Dual-axis chart: Price vs Volume (overlayed)."""
             if market_data.empty:
                 logging.warning("Market data is empty. Cannot plot price vs volume.")
@@ -300,7 +300,7 @@ class PlotterClass:
             fig.update_yaxes(title_text="Volume", secondary_y=True)
             return fig
         @staticmethod
-        def plot_correlation_heatmap(corr_matrix: pd.DataFrame, title="Correlation Heatmap"):
+        def plot_correlation_heatmap(corr_matrix: pd.DataFrame, title="Correlation Heatmap") -> go.Figure:
             "Plot heatmap of correlation"
             if corr_matrix.empty:
                 logging.warning("Correlation matrix is empty. Cannot plot the correlation")
@@ -319,11 +319,93 @@ class PlotterClass:
                 yaxis=dict(autorange="reversed")
             )
             return fig
-
+        
+    class FinancialPlotter:
+        @staticmethod
+        def plot_trend(financials: pd.DataFrame, cols: List[str] = None, title: str = "Financial Trends") -> go.Figure:
+            """
+            Plot line trends for selected financial columns (Revenue, EBITDA, Net Income, EPS, etc.)
+            """
+            if financials.empty:
+                logging.warning("Financials data is empty. Cannot plot trend.")
+                return go.Figure()
             
-
+            if cols is None:
+                cols = [c for c in financials.columns if c not in ['Date', 'Symbol']]
             
+            fig = go.Figure()
+            for col in cols:
+                if col in financials.columns:
+                    fig.add_trace(go.Scatter(
+                        x=financials['Date'], y=financials[col],
+                        mode='lines+markers', name=col
+                    ))
+            fig.update_layout(title=title, xaxis_title='Date', yaxis_title='Value')
+            return fig
+
+        @staticmethod
+        def plot_growth(financials: pd.DataFrame, col: str, title: str = None) -> go.Figure:
+            """
+            Plot growth rates for a single metric column (e.g., Total Revenue_growth_YoY)
+            """
+            if financials.empty or col not in financials.columns:
+                logging.warning(f"{col} not found in financials data. Cannot plot growth.")
+                return go.Figure()
             
+            if title is None:
+                title = f"{col} Growth"
+            
+            fig = go.Figure()
+            fig.add_trace(go.Bar(x=financials['Date'], y=financials[col], name=col))
+            fig.update_layout(title=title, xaxis_title='Date', yaxis_title='Growth (%)')
+            return fig
 
+        @staticmethod
+        def plot_eps_vs_stock(financials: pd.DataFrame, market_data: pd.DataFrame, eps_col: str = "Diluted EPS", stock_col: str = "Close", title: str = "EPS vs Stock Price") -> go.Figure:
+            """
+            Dual-axis plot of EPS and stock price over time
+            """
+            if financials.empty or market_data.empty:
+                logging.warning("Financial or market data is empty. Cannot plot EPS vs Stock.")
+                return go.Figure()
+            
+            df = financials.merge(market_data[['Date', stock_col]], on='Date', how='left')
+            fig = make_subplots(specs=[[{"secondary_y": True}]])
+            fig.add_trace(go.Scatter(x=df['Date'], y=df[eps_col], name='EPS', mode='lines+markers'), secondary_y=False)
+            fig.add_trace(go.Scatter(x=df['Date'], y=df[stock_col], name='Stock Price', mode='lines'), secondary_y=True)
+            fig.update_layout(title=title, xaxis_title='Date')
+            fig.update_yaxes(title_text=eps_col, secondary_y=False)
+            fig.update_yaxes(title_text=stock_col, secondary_y=True)
+            return fig
 
-                
+        @staticmethod
+        def plot_ratios(financials: pd.DataFrame, ratio_cols: List[str], title: str = "Financial Ratios") -> go.Figure:
+            """
+            Plot any ratios already computed (e.g., P/E, P/B, ROE, EBITDA margin)
+            """
+            if financials.empty or not ratio_cols:
+                logging.warning("Financial data or ratio columns are empty. Cannot plot ratios.")
+                return go.Figure()
+            
+            fig = go.Figure()
+            for r in ratio_cols:
+                if r in financials.columns:
+                    fig.add_trace(go.Scatter(x=financials['Date'], y=financials[r], name=r, mode='lines+markers'))
+            
+            fig.update_layout(title=title, xaxis_title='Date', yaxis_title='Value')
+            return fig
+
+        @staticmethod
+        def plot_revenue_vs_stock_growth(df: pd.DataFrame, rev_col: str = "revenue_growth_yoy", stock_col: str = "stock_returns", title: str = "Revenue Growth vs Stock Returns") -> go.Figure:
+            """
+            Scatter plot of revenue growth vs stock returns (already computed)
+            """
+            if df.empty or rev_col not in df.columns or stock_col not in df.columns:
+                logging.warning("Data or columns missing. Cannot plot revenue vs stock.")
+                return go.Figure()
+            
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=df[rev_col], y=df[stock_col],
+                                    mode='markers', name='Revenue vs Stock'))
+            fig.update_layout(title=title, xaxis_title='Revenue Growth (%)', yaxis_title='Stock Returns (%)')
+            return fig
