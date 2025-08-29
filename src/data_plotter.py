@@ -5,12 +5,13 @@ import pandas as pd
 from plotly.subplots import make_subplots
 import logging
 import plotly.figure_factory as ff
+from typing import List 
 
 class PlotterClass:
     "Class for plotting financial data"
     template = 'plotly_dark'
     
-    class MarketData:
+    class MarketDataPlotter:
         @staticmethod
         def plot_closing_data(market_data: pd.DataFrame) -> go.Figure:
             "Plot closing data from the market data "
@@ -319,7 +320,6 @@ class PlotterClass:
                 yaxis=dict(autorange="reversed")
             )
             return fig
-        
     class FinancialPlotter:
         @staticmethod
         def plot_trend(financials: pd.DataFrame, cols: List[str] = None, title: str = "Financial Trends") -> go.Figure:
