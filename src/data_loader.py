@@ -104,7 +104,60 @@ class DataLoader:
         except Exception as e:
             logging.error(f"Error downloading options data for {ticker}: {e}")
             return pd.DataFrame()
-    
+    def download_options_data(self, ticker: str) -> pd.DataFrame:
+        """
+        Downloads all options data for a single ticker across all expiries.
+        Returns a standardized DataFrame with columns:
+        ['contractSymbol','strike','lastPrice','bid','ask','volume','openInterest','Type','Ticker','expiry']
+        """
+        try:
+            self._validate_input(ticker)
+            tk = yf.Ticker(ticker)
+
+            expiries = tk.options
+            if not expiries:
+                logging.warning(f"No option expiries found for {ticker}.")
+                return pd.DataFrame()
+
+            standardized_options_data = []
+
+            for exp in expiries:
+                try:
+                    chain = tk.option_chain(exp)
+                except Exception as e:
+                    logging.warning(f"Could not fetch option chain for {ticker} expiry {exp}: {e}")
+                    continue
+
+                for opt_type, opt_data in [("calls", chain.calls), ("puts", chain.puts)]:
+                    if not opt_data.empty:
+                        opt_data = opt_data[["contractSymbol","strike","lastPrice","bid","ask","volume","openInterest"]].dropna()
+                        opt_data = opt_data.astype({
+                            "strike": float,
+                            "lastPrice": float,
+                            "bid": float,
+                            "ask": float,
+                            "volume": float,
+                            "openInterest": float,
+                        })
+                        opt_data["Type"] = opt_type
+                        opt_data["Ticker"] = ticker
+                        opt_data["expiry"] = pd.to_datetime(exp)
+                        standardized_options_data.append(opt_data)
+
+            if not standardized_options_data:
+                logging.warning(f"No options data found for {ticker}.")
+                return pd.DataFrame()
+
+            options_data = pd.concat(standardized_options_data).reset_index(drop=True)
+            if options_data.isnull().values.any():
+                options_data = options_data.dropna()
+            return options_data
+
+        except Exception as e:
+            logging.error(f"Error downloading options data for {ticker}: {e}")
+            return pd.DataFrame()
+
+
     def download_financials(self, ticker: str) -> pd.DataFrame:
         # Downloads financial data for a single ticker
         try:
