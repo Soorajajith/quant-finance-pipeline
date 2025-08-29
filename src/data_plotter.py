@@ -409,3 +409,89 @@ class PlotterClass:
                                     mode='markers', name='Revenue vs Stock'))
             fig.update_layout(title=title, xaxis_title='Revenue Growth (%)', yaxis_title='Stock Returns (%)')
             return fig
+
+    class OptionsPlotter:     
+        @staticmethod
+        def plot_open_interest_by_strike(options_df, top_n=20, ticker='TICKER'):
+            """Bar chart: Open Interest by strike (calls vs puts)"""
+            if options_df.empty:
+                return go.Figure()
+            
+            calls = options_df[options_df['Type']=='calls'].sort_values('openInterest', ascending=False).head(top_n)
+            puts = options_df[options_df['Type']=='put'].sort_values('openInterest', ascending=False).head(top_n)
+            
+            fig = go.Figure()
+            if not calls.empty:
+                dfc = calls.iloc[::-1]
+                fig.add_trace(go.Bar(x=dfc['openInterest'], y=dfc['strike'].astype(str),
+                                    name='Calls OI', orientation='h'))
+            if not puts.empty:
+                dfp = puts.iloc[::-1]
+                fig.add_trace(go.Bar(x=dfp['openInterest'], y=dfp['strike'].astype(str),
+                                    name='Puts OI', orientation='h'))
+            fig.update_layout(title=f"{ticker} Open Interest by Strike (Top {top_n})",
+                            xaxis_title="Open Interest", yaxis_title="Strike",
+                            barmode='group')
+            return fig
+
+        @staticmethod
+        def plot_iv_term_structure(iv_term_df, ticker='TICKER'):
+            """Line chart: IV term structure"""
+            if iv_term_df.empty:
+                return go.Figure()
+            
+            iv_col = [c for c in iv_term_df.columns if c.startswith('IV')][0]
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=iv_term_df['time_to_expiry'], y=iv_term_df[iv_col],
+                                    mode='lines+markers', name='IV'))
+            fig.update_layout(title=f"{ticker} Implied Volatility Term Structure",
+                            xaxis_title="Time to Expiry (years)",
+                            yaxis_title="Implied Volatility")
+            return fig
+
+        @staticmethod
+        def plot_vol_surface(vol_surface_df, ticker='TICKER'):
+            """3D Surface plot of volatility surface"""
+            if vol_surface_df.empty:
+                return go.Figure()
+            
+            piv = vol_surface_df.pivot_table(index='expiry', columns='strike', values='IV', aggfunc='median')
+            piv = piv.sort_index()
+            strikes = np.array(piv.columns.tolist(), dtype=float)
+            expiries = np.array(piv.index.tolist())
+            Z = piv.values
+            
+            y = np.array([(pd.to_datetime(e) - pd.to_datetime(expiries[0])).days for e in expiries], dtype=float)
+            x = strikes.astype(float)
+            
+            fig = go.Figure()
+            fig.add_trace(go.Surface(z=Z, x=x, y=y))
+            fig.update_layout(title=f"{ticker} Implied Volatility Surface",
+                            scene=dict(xaxis_title="Strike",
+                                        yaxis_title="Days from first expiry",
+                                        zaxis_title="Implied Volatility"))
+            return fig
+
+        @staticmethod
+        def plot_iv_vs_underlying(iv_history_df, underlying_df, ticker='TICKER'):
+            """
+            Plot IV (median across strikes) vs underlying price time series
+            iv_history_df: ['as_of', 'impliedVolatility']
+            underlying_df: ['Date', 'Close']
+            """
+            if iv_history_df.empty or underlying_df.empty:
+                return go.Figure()
+            
+            iv_ts = iv_history_df.groupby('as_of')['impliedVolatility'].median().reset_index()
+            merged = iv_ts.merge(underlying_df.rename(columns={'Date':'as_of'}), on='as_of', how='left')
+            
+            fig = make_subplots(specs=[[{"secondary_y": True}]])
+            fig.add_trace(go.Scatter(x=merged['as_of'], y=merged['impliedVolatility'],
+                                    name='IV', mode='lines+markers'), secondary_y=False)
+            fig.add_trace(go.Scatter(x=merged['as_of'], y=merged['Close'],
+                                    name='Underlying', mode='lines'), secondary_y=True)
+            fig.update_layout(title=f"{ticker} IV vs Underlying Price",
+                            xaxis_title='Date')
+            fig.update_yaxes(title_text="Implied Volatility", secondary_y=False)
+            fig.update_yaxes(title_text="Underlying Price", secondary_y=True)
+            return fig
