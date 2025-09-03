@@ -40,9 +40,24 @@ class FinancialAnalysis:
             return pd.DataFrame()
         shift_period = 4 if period=='YoY' else 1
         df_growth = financial.copy()
+        # Detect frequency: quarterly vs annual
+        freq = pd.infer_freq(df_growth.index)
+        if freq is None:
+            logging.warning("Could not infer frequency, assuming annual")
+            shift_period = 1 if period == 'YoY' else 1
+        else:
+            if period == 'YoY':
+                shift_period = 4 if freq.startswith('Q') else 1
+            else:  # QoQ
+                shift_period = 1
         for col in ['Total Revenue', 'EBITDA', 'Net Income', 'Diluted EPS']:
-            df_growth[f'{col}_growth_{period}'] = (df_growth[col] / df_growth[col].shift(shift_period) - 1) * 100
-        return df_growth.dropna()
+            if col not in df_growth.columns:
+                logging.warning(f"{col} not in financials, skipping")
+                continue
+            df_growth[f"{col}_growth_{period}"] = (
+                (df_growth[col] / df_growth[col].shift(shift_period) - 1) * 100
+            )
+        return df_growth.dropna()   # don't dropna, let later steps handle alignment
     
     @staticmethod
     def compute_ratios(financial: pd.DataFrame, stock_price: pd.DataFrame) -> pd.DataFrame:
