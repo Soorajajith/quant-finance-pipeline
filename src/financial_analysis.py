@@ -18,7 +18,7 @@ class FinancialAnalysis:
             logging.warning("Financial data is empty")
             return pd.DataFrame()
         financial = financial.reset_index().rename(columns={"index": "Date"})
-        financial["Date"] = pd.to_datetime(financial["Date"])
+        financial["Date"] = pd.to_datetime(financial["Date"], utc=True)
         financial = financial.set_index("Date")
         cols = ['Total Revenue', 'EBITDA', 'Net Income', 'Diluted EPS', 
                 'Operating Expense', 'Research And Development', 'Selling General And Administration',
