@@ -68,14 +68,20 @@ class FinancialAnalysis:
             logging.warning("Either financial daya or stock price data is available")
             return pd.DataFrame()
         df = financial.copy()
-        df = df.merge(stock_price[['Date','Close']], on='Date', how='left')
+        stock_price['Date'] = stock_price['Date'].dt.tz_convert('UTC')
+        # print((df.dtypes))
+        df = pd.merge_asof(financial,
+                   stock_price[['Date', 'Close']],
+                   left_index=True,  # financial index
+                   right_on='Date',
+                   direction='backward')  # last available price
         df['p/e'] = df['Close'] / df['Diluted EPS']
         df['ebitda_margin'] = df['EBITDA'] / df['Total Revenue']
-        if 'Total Shareholder Equite' in df.columns:
-            df['roe'] = df['Net Income'] / df['Total Shareholder Equity']
-        if 'Total Assets' in df.columns and 'Total Liabilities' in df.columns:
-            df['book_value'] = df['Total Assets'] - df['Total Liabilities']
-            df['p/b'] = df['Close'] / df['book_value']
+        # if 'Total Shareholder Equity' in df.columns:
+        #     df['roe'] = df['Net Income'] / df['Total Shareholder Equity']
+        # if 'Total Assets' in df.columns and 'Total Liabilities' in df.columns:
+        #     df['book_value'] = df['Total Assets'] - df['Total Liabilities']
+        #     df['p/b'] = df['Close'] / df['book_value']
         
         return df
     
@@ -88,10 +94,21 @@ class FinancialAnalysis:
             logging.warning("Either financial or market data is empty")
             return pd.DataFrame()
         
-        df = financials[['Date','Total Revenue']].copy()
-        df['revenue_growth_yoy'] = df['Total Revenue'].pct_change(periods=4) * 100
-        df = df.merge(market_data[['Date','Close']], on='Date', how='left')
-        df['stock_returns'] = df['Close'].pct_change(periods=4) * 100
+        df = financials[['Total Revenue']].copy()
+        freq = pd.infer_freq(df.index)
+        if freq is None:
+            logging.warning("Could not infer frequency, assuming annual")
+            shift_period = 1
+        else:
+            shift_period = 4 if freq.startswith('Q') else 1
+        df = pd.merge_asof(financials[['Total Revenue']], 
+                   market_data[['Date','Close']], 
+                   left_index=True, 
+                   right_on='Date', 
+                   direction='backward')  # takes last available stock price
+        df['revenue_growth_yoy'] = df['Total Revenue'].pct_change(periods=shift_period) * 100
+        df['stock_returns'] = df['Close'].pct_change(periods=shift_period) * 100
+        print(df[['revenue_growth_yoy','stock_returns']])
         df = df.dropna(subset=['revenue_growth_yoy','stock_returns'])
         return df
     
