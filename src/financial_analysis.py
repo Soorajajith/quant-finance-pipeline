@@ -17,17 +17,20 @@ class FinancialAnalysis:
         if financial.empty:
             logging.warning("Financial data is empty")
             return pd.DataFrame()
-        cols = ['Date','Total Revenue', 'EBITDA', 'Net Income', 'Diluted EPS', 
-                'Operating Expense', 'Research and Development', 'Selling General and Administration',
-                'Cost of Revenue', 'Symbol']
+        financial = financial.reset_index().rename(columns={"index": "Date"})
+        financial["Date"] = pd.to_datetime(financial["Date"])
+        financial = financial.set_index("Date")
+        cols = ['Total Revenue', 'EBITDA', 'Net Income', 'Diluted EPS', 
+                'Operating Expense', 'Research And Development', 'Selling General And Administration',
+                'Cost Of Revenue', 'Symbol']
         df_fin = financial[financial['Symbol']==ticker].copy()
-        df_fin = df_fin[cols].sort_values('Date').reset_index(drop=True)
-        numeric_cols = [c for c in df_fin.columns if c != 'Date' and c != 'Symbol']
+        df_fin = df_fin[cols].sort_index()
+        numeric_cols = [c for c in df_fin.columns if c != 'Symbol']
         df_fin[numeric_cols] = df_fin[numeric_cols].astype(float)
         return df_fin
     
     @staticmethod
-    def compute_growth(financial: pd.DataFrame, period='Yoy') -> pd.DataFrame:
+    def compute_growth(financial: pd.DataFrame, period='YoY') -> pd.DataFrame:
         """
         Compute growth rates for revenue, EBITDA, net income, EPS.
         period: 'YoY' (4 quarters), 'QoQ' (1 quarter)
