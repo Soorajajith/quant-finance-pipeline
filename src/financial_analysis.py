@@ -38,7 +38,6 @@ class FinancialAnalysis:
         if financial.empty:
             logging.warning("Financial data is empty. Cannot compute growth rate")
             return pd.DataFrame()
-        shift_period = 4 if period=='YoY' else 1
         df_growth = financial.copy()
         # Detect frequency: quarterly vs annual
         freq = pd.infer_freq(df_growth.index)
