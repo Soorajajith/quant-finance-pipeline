@@ -8,23 +8,52 @@ class StatsAnalysis:
     "Class for statistical analysis of financial data"
 
     @staticmethod
-    def calculate_returns(data: pd.DataFrame, rolling_window:int) -> pd.DataFrame:
+    def calculate_returns(data: pd.DataFrame, rolling_window:int, windows: int=[5,10,20]) -> pd.DataFrame:
         if data.empty:
             logging.warning("Market data is empty. Cannot calculate returns and volatility.")
             return pd.DataFrame()
         # Make a copy to keep the original data intact
         stats_data = data.copy()
         # Calculate returns and volatility
-        stats_data["returns"] = stats_data["Close"].pct_change()
+        for w in windows:
+            stats_data[f"returns_{w}"] = data["Close"].pct_change(periods=w)
+        stats_data["returns_1d"] = stats_data["Close"].pct_change(periods=1)
         stats_data["log_returns"] = np.log(stats_data["Close"] / stats_data["Close"].shift(1))
-        stats_data["volatility"] = stats_data["returns"].rolling(window=rolling_window).std()
+        stats_data["volatility"] = stats_data["returns_1d"].rolling(window=rolling_window).std()
         stats_data["volatility_log"] = stats_data["log_returns"].rolling(window=rolling_window).std()
         # Convert only numeric columns to float
-        numeric_cols = ["Close", "Open", "High", "Low", "Volume", 
-                        "returns", "log_returns", "volatility", "volatility_log"]
+        numeric_cols = stats_data.select_dtypes(include=[np.number]).columns
         stats_data[numeric_cols] = stats_data[numeric_cols].astype(float)
         return stats_data.dropna()
     
+    @staticmethod 
+    def compute_atr(data: pd.DataFrame, window:int = 14) -> pd.DataFrame:
+        """Compute Average True Range (ATR)"""
+        if data.empty:
+            logging.warning("Market data is empty.")
+            return pd.DataFrame()
+        for col in ['High', 'Low', 'Close']:
+            if col not in data.columns:
+                logging.error("Missing required column: %s", col)
+                return data
+            
+        atr_data = pd.DataFrame(index=data.index)
+        high_low = data['High'] - data['Low']
+        high_close = (data['High'] - data['Close'].shift()).abs()
+        low_close = (data['Low']- data['Close'].shift()).abs()
+        tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+        atr_data[f'atr_{window}'] = tr.rolling(window=window).mean()
+        return atr_data
+    @staticmethod
+    def compute_roc(data: pd.DataFrame, window: int = 10) -> pd.DataFrame:
+        """Compute Rate of Change (ROC)"""
+        if data.empty:
+            logging.warning("Market data is empty. Cannot compute Rate of Change (ROC).")
+            return pd.DataFrame()
+        roc_data = pd.DataFrame(index=data.index)
+        roc_data["roc"] = data["Close"].pct_change(periods=window)
+        return roc_data
+
     @staticmethod
     def calculate_descriptive_stats(data: pd.DataFrame) -> pd.DataFrame:
         if data.empty:
@@ -76,6 +105,7 @@ class StatsAnalysis:
     
     @staticmethod
     def calculate_vwap(data: pd.DataFrame) -> pd.DataFrame:
+        """"Calculate Volume Weighted Average Price (VWAP)"""
         if data.empty:
             logging.Warning("Market data is empty. Cannot calculate volume weighted average price")
             return pd.DataFrame("typical_price","cum_vol","cum_vol_price","vwap")
