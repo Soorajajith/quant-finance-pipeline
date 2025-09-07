@@ -5,7 +5,7 @@ from datetime import datetime
 from scipy.stats import norm
 from scipy.optimize import brentq
 
-class OptionsAnalyzer:
+class OptionsAnalysis:
     """
     Tools to build options snapshot, compute implied vol surface / term-structure,
     aggregate OI/volumr and produce Plotly visualization
@@ -42,7 +42,7 @@ class OptionsAnalyzer:
             return np.nan
         
         def objective(sig):
-            return OptionsAnalyzer._bs_price(S, K, T, r, sig, option_type) - market_price
+            return OptionsAnalysis._bs_price(S, K, T, r, sig, option_type) - market_price
         low,high = 1e-6, 5.0
 
         try:
