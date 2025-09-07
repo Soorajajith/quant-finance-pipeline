@@ -44,6 +44,7 @@ class StatsAnalysis:
         tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
         atr_data[f'atr_{window}'] = tr.rolling(window=window).mean()
         return atr_data
+    
     @staticmethod
     def compute_roc(data: pd.DataFrame, window: int = 10) -> pd.DataFrame:
         """Compute Rate of Change (ROC)"""
@@ -53,6 +54,30 @@ class StatsAnalysis:
         roc_data = pd.DataFrame(index=data.index)
         roc_data["roc"] = data["Close"].pct_change(periods=window)
         return roc_data
+
+    @staticmethod
+    def compute_obv(data: pd.DataFrame) -> pd.DataFrame:
+        """Compute On-Balance Volume (OBV)"""
+        if data.empty:
+            logging.warning("Market data is empty.")
+            return pd.DataFrame()
+        for col in ['Close','Volume']:
+            if col not in data.columns:
+                logging.error("Missing required column: %s", col)
+                return data
+        obv_data = pd.DataFrame(index=data.index)
+        obv = [0]
+        for i in range(1, len(data)):
+            if data['Close'].iloc[i] > data['Close'].iloc[i-1]:
+                obv.append(obv[-1] + data['Volume'].iloc[i])
+            elif data['Close'].iloc[i] < data['Close'].iloc[i-1]:
+                obv.append(obv[-1] - data['Volume'].iloc[i])
+            else:
+                obv.append(obv[-1])
+        obv_data['obv'] = obv
+        return obv_data
+
+            
 
     @staticmethod
     def calculate_descriptive_stats(data: pd.DataFrame) -> pd.DataFrame:
