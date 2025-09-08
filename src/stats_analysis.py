@@ -86,16 +86,16 @@ class StatsAnalysis:
             return pd.DataFrame(index=data.index)
         # Calculate descriptive statistics
         descriptive_data = pd.DataFrame({
-        "returns_mean": [data["returns"].mean()],
-        "returns_std": [data["returns"].std()],
-        "returns_median": [data["returns"].median()],
-        "skewness": [data["returns"].skew()],
-        "kurtosis": [data["returns"].kurtosis()],
-        "returns_min": [data["returns"].min()],
-        "returns_max": [data["returns"].max()],
+        "returns_mean": [data["returns_1d"].mean()],
+        "returns_std": [data["returns_1d"].std()],
+        "returns_median": [data["returns_1d"].median()],
+        "skewness": [data["returns_1d"].skew()],
+        "kurtosis": [data["returns_1d"].kurtosis()],
+        "returns_min": [data["returns_1d"].min()],
+        "returns_max": [data["returns_1d"].max()],
         ## Quantiles 5% and 95% for better understanding of distribution
-        "returns_5pct": [data["returns"].quantile(0.05)],
-        "returns_95pct": [data["returns"].quantile(0.95)]
+        "returns_5pct": [data["returns_1d"].quantile(0.05)],
+        "returns_95pct": [data["returns_1d"].quantile(0.95)]
         })
         return descriptive_data
     
@@ -105,7 +105,7 @@ class StatsAnalysis:
             logging.warning("Market data is empty. Cannot estimate return distribution.")
             return pd.DataFrame("x","kde")
 
-        returns = data["returns"].dropna()
+        returns = data["returns_1d"].dropna()
         kde = gaussian_kde(returns)
         ## x_range is using min() and max() of the observed returns. Sometimes, for smoother visual tails, 
         ## extending the range slightly (e.g., min()-3*std to max()+3*std) is better.
