@@ -167,3 +167,25 @@ class StatsAnalysis:
         correlation_ohlcv = data[available].corr()
         correlation_returns = return_data.corr()
         return correlation_ohlcv, correlation_returns
+    
+    @staticmethod
+    def compute_rolling_sharpe(data: pd. DataFrame, window: int = 60) -> pd.Series:
+        """Compute rolling sharpe ratio"""
+        if data.empty:
+            logging.warning("Market data is empty.")
+            return pd.Series()
+        rolling_sharpe = (data["returns_1d"].rolling(window).mean())
+        rolling_sharpe /= data["returns_1d"].rolling(window).std()
+        rolling_sharpe *= np.sqrt(252)  # Annualize assuming 252 trading days
+        return rolling_sharpe
+    
+    @staticmethod
+    def compute_drawdown(data: pd.DataFrame) -> pd.Series:
+        """Compute drawdown from peak"""
+        if data.empty:
+            logging.warning("Market data is empty.")
+            return pd.Series()
+        cumulative = (1 + data['returns_1d']).cumprod()
+        running_max = cumulative.cummax()
+        drawdown = (cumulative - running_max) / running_max
+        return drawdown.rename('drawdown')
