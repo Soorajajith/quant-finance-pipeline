@@ -71,7 +71,7 @@ class TechnicalIndicators:
             if col not in bollinger_data.columns:
                 logging.error(f"{col} not in Bollinger data")
                 return bollinger_data
-        if ['Close'] not in market_data.columns:
+        if 'Close' not in market_data.columns:
             logging.error("Close price not in market data")
             return market_data
         bb_percent_b = pd.DataFrame(index=market_data.index)
