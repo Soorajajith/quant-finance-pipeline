@@ -26,7 +26,7 @@ class OptionsAnalysis:
         if option_type == 'call':
             return float(S * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2))
         else:
-            return float(K * np.exp(-r * T) * norm.cdf(-d2) - S * norm.cdf(-d2))
+            return float(K * np.exp(-r * T) * norm.cdf(-d2) - S * norm.cdf(-d1))
     @staticmethod
     def implied_volatility_from_price(market_price, S, K, T, r, option_type='call', tol=1e-6, max_iter=100):
         """
@@ -93,7 +93,7 @@ class OptionsAnalysis:
             return pd.DataFrame()
         df = options_df.copy()
         grp=df.groupby('expiry')['impliedVolatility']
-        iv_series = grp.mean() if agg == 'median' else grp.mean()
+        iv_series = grp.median() if agg == 'median' else grp.mean()
         out = iv_series.reset_index().rename(columns={'impliedVolatility': f'IV_{agg}'})
         out['time_to_expiry'] = (pd.to_datetime(out['expiry']) - pd.Timestamp.today()).dt.days / 365.25
         return out

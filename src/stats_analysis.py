@@ -103,7 +103,7 @@ class StatsAnalysis:
     def estimate_return_distribution(data: pd.DataFrame, num_points: int = 500) -> pd.DataFrame:
         if data.empty:
             logging.warning("Market data is empty. Cannot estimate return distribution.")
-            return pd.DataFrame("x","kde")
+            return pd.DataFrame(columns=["x","kde"])
 
         returns = data["returns_1d"].dropna()
         kde = gaussian_kde(returns)
@@ -121,8 +121,8 @@ class StatsAnalysis:
     @staticmethod
     def calculate_rolling_volume_average(data: pd.DataFrame, size1: int = 20, size2: int = 50) -> pd.DataFrame:
         if data.empty:
-            logging.Warning("Market data is empty. Cannot calculate rolling volume average")
-            return pd.DataFrame("rolling_volume_20","rolling_volume_50")
+            logging.warning("Market data is empty. Cannot calculate rolling volume average")
+            return pd.DataFrame()
         volume_data = pd.DataFrame(index=data.index)
         volume_data["rolling_volume_20"] = data["Volume"].rolling(size1).mean()
         volume_data["rolling_volume_50"] = data["Volume"].rolling(size2).mean()
@@ -132,8 +132,8 @@ class StatsAnalysis:
     def calculate_vwap(data: pd.DataFrame) -> pd.DataFrame:
         """"Calculate Volume Weighted Average Price (VWAP)"""
         if data.empty:
-            logging.Warning("Market data is empty. Cannot calculate volume weighted average price")
-            return pd.DataFrame("typical_price","cum_vol","cum_vol_price","vwap")
+            logging.warning("Market data is empty. Cannot calculate volume weighted average price")
+            return pd.DataFrame()
         vwap_data = pd.DataFrame(index=data.index)
         vwap_data["typical_price"] = (data["High"] + data["Low"] + data["Close"])/3
         vwap_data["cum_vol"] = data["Volume"].cumsum()
