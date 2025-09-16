@@ -3,6 +3,8 @@ import pandas as pd
 import logging
 from scipy.stats import gaussian_kde
 from typing import Tuple
+from sklearn.decomposition import PCA
+from statsmodels.tsa.stattools import adfuller, kpss
 
 class StatsAnalysis:
     "Class for statistical analysis of financial data"
@@ -189,3 +191,33 @@ class StatsAnalysis:
         running_max = cumulative.cummax()
         drawdown = (cumulative - running_max) / running_max
         return drawdown.rename('drawdown')
+    @staticmethod
+    def pca_factors(returns: pd.DataFrame, n_components: int = 5) -> pd.DataFrame:
+        """Compute PCA factors on returns cross section."""
+        if returns.empty:
+            logging.warning("Returns data is empty. Cannot compute PCA factors.")
+            return pd.DataFrame(),[]
+        pca = PCA(n_components=n_components)
+        factors = pca.fit_transform(returns.dropna())
+        factors_df = pd.DataFrame(factors, index=returns.dropna().index,
+                                  columns=[f"factor_{i+1}" for i in range(n_components)])
+        return factors_df, pca.explained_variance_ratio_
+    
+    @staticmethod
+    def adf_test(series: pd.Series) -> Tuple[float, float]:
+        """ Return ADF statistic and p-value"""
+        if series.empty:
+            logging.warning("Input series is empty")
+            return {"stats": None, "pval": None}
+        result = adfuller(series.dropna(), autolag='AIC')
+        return {"stat": result[0], "pval": result[1]}
+    
+    @staticmethod
+    def kpss_test(series: pd.Series, regression: str = 'c') -> Tuple[float, float]:
+        """Return KPSS test statistic and p-value"""
+        if series.empty:
+            logging.warning("Input series is empty")
+            return {"stat": None, "pval": None}
+        result = kpss(series.dropna(), regression=regression, nlags="auto")
+        return {"stat": result[0], "pval": result[1]}
+    
