@@ -111,3 +111,21 @@ class FinancialAnalysis:
         df = df.dropna(subset=['revenue_growth_yoy','stock_returns'])
         return df
     
+    @staticmethod
+    def compute_piotroski(financial: pd.DataFrame) -> pd.Series:
+        """Compute piotroski F score"""
+        fscore = pd.Series(0, index=financial.index, dtype=int)
+        fscore += (financial['Net Income'] > 0).astype(int)
+        fscore += (financial['Operating Cash Flow'] > 0).astype(int)
+        fscore += (financial['Operating Case Flow'] > financial['Net Income']).astype(int)
+        return fscore
+    @staticmethod
+    def compute_altman_z_score(financial: pd.DataFrame) -> pd.Series:
+        """Compute Altman Zscore"""
+        z = (1.2 * financial['Working Capital'] / financial['Total Assets'] +
+        1.4 * financial['Retained Earnings'] / financial['Total Assets'] +
+        3.3 * financial['EBIT'] / financial['Total Assets'] +
+        0.6 * financial['Market Value Equity'] / financial['Total Assets'] +
+        1.0 * financial['Total Revenue'] / financial['Total Assets'])
+        return z
+
